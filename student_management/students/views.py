@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from .models import Students, StudentsPNo
+from .models import Students, StudentsPNo, Subject, Scores
 import json
 
 @csrf_exempt
@@ -88,3 +88,111 @@ def students_pno_api(request):
         pno = get_object_or_404(StudentsPNo, id=data['pno_id'])
         pno.delete()
         return JsonResponse({'message': 'PNo deleted successfully'})
+
+
+@csrf_exempt
+def subject_api(request, id=None):
+    if request.method == 'GET':
+        if id:  # Get single subject by ID
+            subject = get_object_or_404(Subject, id=id)
+            return JsonResponse({'id': subject.id, 'subject_name': subject.subject_name})
+        else:  # Get all subjects
+            subjects = list(Subject.objects.values())
+            return JsonResponse(subjects, safe=False)
+
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        subject = Subject.objects.create(subject_name=data['subject_name'])
+        return JsonResponse({'id': subject.id, 'subject_name': subject.subject_name}, status=201)
+
+    elif request.method == 'PUT':
+        if id:
+            data = json.loads(request.body)
+            subject = get_object_or_404(Subject, id=id)
+            subject.subject_name = data['subject_name']
+            subject.save()
+            return JsonResponse({'id': subject.id, 'subject_name': subject.subject_name})
+
+    elif request.method == 'PATCH':
+        if id:
+            data = json.loads(request.body)
+            subject = get_object_or_404(Subject, id=id)
+            if 'subject_name' in data:
+                subject.subject_name = data['subject_name']
+            subject.save()
+            return JsonResponse({'id': subject.id, 'subject_name': subject.subject_name})
+
+    elif request.method == 'DELETE':
+        if id:
+            subject = get_object_or_404(Subject, id=id)
+            subject.delete()
+            return JsonResponse({'message': 'Subject deleted successfully'})
+
+
+@csrf_exempt
+def scores_api(request, id=None):
+    if request.method == 'GET':
+        if id:  # Get a single score by ID
+            score = get_object_or_404(Scores, id=id)
+            return JsonResponse({
+                'id': score.id,
+                'student': score.student.id,
+                'subject': score.subject.id,
+                'marks': score.marks
+            })
+        else:  # Get all scores
+            scores = list(Scores.objects.values())
+            return JsonResponse(scores, safe=False)
+
+    elif request.method == 'POST':
+        data = json.loads(request.body)
+        student = get_object_or_404(Students, id=data['student_id'])
+        subject = get_object_or_404(Subject, id=data['subject_id'])
+        score = Scores.objects.create(student=student, subject=subject, marks=data['marks'])
+        return JsonResponse({
+            'id': score.id,
+            'student': score.student.id,
+            'subject': score.subject.id,
+            'marks': score.marks
+        }, status=201)
+
+    elif request.method == 'PUT':
+        if id:
+            data = json.loads(request.body)
+            score = get_object_or_404(Scores, id=id)
+            student = get_object_or_404(Students, id=data['student_id'])
+            subject = get_object_or_404(Subject, id=data['subject_id'])
+            score.student = student
+            score.subject = subject
+            score.marks = data['marks']
+            score.save()
+            return JsonResponse({
+                'id': score.id,
+                'student': score.student.id,
+                'subject': score.subject.id,
+                'marks': score.marks
+            })
+
+    elif request.method == 'PATCH':
+        if id:
+            data = json.loads(request.body)
+            score = get_object_or_404(Scores, id=id)
+            if 'student_id' in data:
+                score.student = get_object_or_404(Students, id=data['student_id'])
+            if 'subject_id' in data:
+                score.subject = get_object_or_404(Subject, id=data['subject_id'])
+            if 'marks' in data:
+                score.marks = data['marks']
+            score.save()
+            return JsonResponse({
+                'id': score.id,
+                'student': score.student.id,
+                'subject': score.subject.id,
+                'marks': score.marks
+            })
+
+    elif request.method == 'DELETE':
+        if id:
+            score = get_object_or_404(Scores, id=id)
+            score.delete()
+            return JsonResponse({'message': 'Score deleted successfully'})
